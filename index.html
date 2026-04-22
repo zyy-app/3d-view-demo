@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>设备 3D 展示</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.70) 0%, rgba(255,255,255,0) 30%),
+        radial-gradient(circle at top right, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 28%),
+        linear-gradient(180deg, #e7ebf2 0%, #d9e0ea 45%, #d5dce6 100%);
+      color: #1f2937;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 26px 26px 32px;
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .title-box h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #0f172a;
+    }
+
+    .title-box p {
+      margin: 10px 0 0 0;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #475569;
+    }
+
+    .badge {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      font-size: 13px;
+      color: #334155;
+      backdrop-filter: blur(8px);
+    }
+
+    .viewer-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.72);
+      box-shadow:
+        0 18px 44px rgba(15, 23, 42, 0.10),
+        inset 0 1px 0 rgba(255,255,255,0.65);
+      backdrop-filter: blur(10px);
+    }
+
+    .viewer-topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.60) 0%, rgba(255,255,255,0.32) 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.55);
+    }
+
+    .viewer-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .viewer-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 3px;
+    }
+
+    .hint-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #475569;
+      background: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.72);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .viewer-area {
+      position: relative;
+      padding: 0;
+      background:
+        radial-gradient(circle at 50% 32%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.18) 32%, rgba(255,255,255,0) 55%),
+        linear-gradient(180deg, #e4e9f1 0%, #d7dee8 52%, #d2d9e4 100%);
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 76vh;
+      min-height: 560px;
+      --poster-color: transparent;
+      background: transparent;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.14) 32%, rgba(255,255,255,0) 60%);
+    }
+
+    .loading-box {
+      min-width: 220px;
+      max-width: 80%;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(255,255,255,0.72);
+      box-shadow: 0 14px 36px rgba(15,23,42,0.10);
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      border: 3px solid rgba(59,130,246,0.18);
+      border-top-color: rgba(59,130,246,0.95);
+      animation: spin 0.85s linear infinite;
+    }
+
+    .loading-text {
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.66) 100%);
+      border-top: 1px solid rgba(255,255,255,0.55);
+    }
+
+    .status-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .status-main {
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .status-sub {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .status-ok {
+      color: #0f766e;
+      font-weight: 600;
+    }
+
+    .status-err {
+      color: #b91c1c;
+      font-weight: 600;
+    }
+
+    .file-tag {
+      font-size: 12px;
+      color: #475569;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.75);
+      border-radius: 999px;
+      padding: 7px 12px;
+      white-space: nowrap;
+    }
+
+    .tips {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .tip-card {
+      border-radius: 18px;
+      padding: 16px 16px 14px;
+      background: rgba(255,255,255,0.66);
+      border: 1px solid rgba(255,255,255,0.72);
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+      backdrop-filter: blur(8px);
+    }
+
+    .tip-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #0f172a;
+    }
+
+    .tip-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.75;
+      color: #475569;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .tips {
+        grid-template-columns: 1fr;
+      }
+
+      model-viewer {
+        height: 68vh;
+        min-height: 460px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .wrap {
+        padding: 16px 14px 24px;
+      }
+
+      .title-box h1 {
+        font-size: 22px;
+      }
+
+      .title-box p {
+        font-size: 13px;
+      }
+
+      .viewer-topbar,
+      .status-bar {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      model-viewer {
+        height: 60vh;
+        min-height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="title-box">
+        <h1>设备 3D 展示</h1>
+        <p>鼠标左键旋转，滚轮缩放，右键拖动平移。移动端可双指缩放与拖动。</p>
+      </div>
+      <div class="badge">Web 3D Viewer</div>
+    </div>
+
+    <div class="viewer-card">
+      <div class="viewer-topbar">
+        <div>
+          <div class="viewer-title">三维模型在线预览</div>
+          <div class="viewer-subtitle">适合客户展示、内部评审与远程查看</div>
+        </div>
+        <div class="hint-list">
+          <div class="hint">左键旋转</div>
+          <div class="hint">滚轮缩放</div>
+          <div class="hint">右键平移</div>
+        </div>
+      </div>
+
+      <div class="viewer-area">
+        <model-viewer
+          id="viewer"
+          src="model.glb"
+          alt="3D模型"
+          camera-controls
+          touch-action="pan-y"
+          shadow-intensity="1.9"
+          exposure="0.62"
+          environment-image="legacy"
+          interaction-prompt="auto"
+          auto-rotate
+          auto-rotate-delay="2500"
+          rotation-per-second="18deg"
+          camera-orbit="35deg 72deg auto"
+          min-camera-orbit="auto 20deg auto"
+          max-camera-orbit="auto 115deg auto"
+          field-of-view="28deg">
+        </model-viewer>
+
+        <div class="loading-overlay" id="loadingOverlay">
+          <div class="loading-box">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">模型正在加载，请稍候…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-left">
+          <div class="status-main" id="statusMain">状态：正在初始化...</div>
+          <div class="status-sub" id="statusSub">若长时间无显示，请检查本地服务、文件名和模型路径。</div>
+        </div>
+        <div class="file-tag">模型文件：model.glb</div>
+      </div>
+    </div>
+
+    <div class="tips">
+      <div class="tip-card">
+        <h3>显示说明</h3>
+        <p>当前页面已压低曝光并增强阴影，相比默认参数更适合浅色机箱、浅灰外壳和电路板装配展示。</p>
+      </div>
+      <div class="tip-card">
+        <h3>本地测试</h3>
+        <p>请通过本地服务器访问，不要直接双击 HTML。推荐使用 <code>http://localhost:8000</code> 方式测试。</p>
+      </div>
+      <div class="tip-card">
+        <h3>后续可扩展</h3>
+        <p>后面可以继续加公司名、型号参数、热点标注、剖视说明和多模型切换，做成完整产品展示页。</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const viewer = document.getElementById("viewer");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const loadingText = document.getElementById("loadingText");
+    const statusMain = document.getElementById("statusMain");
+    const statusSub = document.getElementById("statusSub");
+
+    let loaded = false;
+
+    function hideLoading() {
+      loadingOverlay.style.opacity = "0";
+      setTimeout(() => {
+        loadingOverlay.style.display = "none";
+      }, 350);
+    }
+
+    viewer.addEventListener("load", () => {
+      loaded = true;
+      hideLoading();
+      statusMain.innerHTML = '状态：<span class="status-ok">模型加载成功</span>';
+      statusSub.textContent = "可直接旋转、缩放、平移查看三维结构。";
+    });
+
+    viewer.addEventListener("error", (e) => {
+      loadingText.textContent = "模型加载失败";
+      statusMain.innerHTML = '状态：<span class="status-err">模型加载失败</span>';
+      statusSub.textContent = "请检查 model.glb 是否与 index.html 在同一目录，并确认通过本地服务器访问。";
+      console.error("模型加载失败：", e);
+    });
+
+    setTimeout(() => {
+      if (!loaded) {
+        statusMain.innerHTML = '状态：<span class="status-err">模型仍在等待加载</span>';
+        statusSub.textContent = "通常是因为直接用 file:/// 打开、路径不对，或模型文件较大。";
+      }
+    }, 4500);
+  </script>
+</body>
+</html>
